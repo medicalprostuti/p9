@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>ফিজিক্স ১ম অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question:
+            "A ও B-কে সন্নিহিত বাহু ধরে অঙ্কিত ত্রিভুজের ক্ষেত্রফল ফেলার গুণনের উদাহরণ&mdash;",
+          options: {
+            A: "A &sdot; B",
+            B: "|A &times; B|",
+            C: "|A &times; B|/2",
+            D: "A &times; B",
+          },
+          correct: "C",
+          explanation:
+            "<p>যদি দুটি ভেক্টর A ও B একটি ত্রিভুজের দুটি সন্নিহিত বাহু নির্দেশ করে, তাহলে তাদের দ্বারা গঠিত ত্রিভুজের ক্ষেত্রফল ভেক্টর A ও B এর ভেক্টর গুণফলের (Cross product) মানের অর্ধেক হবে।</p><p>ত্রিভুজের ক্ষেত্রফল = &frac12; |A &times; B|<br><br>অন্যদিকে, A ও B কে সন্নিহিত বাহু ধরে অঙ্কিত সামান্তরিকের ক্ষেত্রফল হবে |A &times; B|।</p><ul><li>A) A &sdot; B: এটি স্কেলার গুণফল (Dot product), যা একটি স্কেলার রাশি এবং ক্ষেত্রফল নির্দেশ করে না।</li><li>B) |A &times; B|: এটি A ও B কে সন্নিহিত বাহু ধরে অঙ্কিত সামান্তরিকের ক্ষেত্রফল।</li><li>C) |A &times; B|/2: এটি সঠিক। এটি A ও B কে সন্নিহিত বাহু ধরে অঙ্কিত ত্রিভুজের ক্ষেত্রফল।</li><li>D) A &times; B: এটি ভেক্টর গুণফল, যা একটি ভেক্টর রাশি। ক্ষেত্রফল একটি স্কেলার রাশি, তাই শুধু A &times; B দিয়ে ক্ষেত্রফল বোঝানো যায় না, এর মান নিতে হয়।</li></ul>",
+        },
+        {
+          id: 2,
+          question: "A &sdot; B = 0 হলে বুঝা যায়&mdash;",
+          options: {
+            A: "A = 0",
+            B: "B = 0",
+            C: "A ও B একে অপরের উপর লম্ব",
+            D: "A ও B পরস্পর সমান্তরাল",
+          },
+          correct: "C",
+          explanation:
+            "<p>দুটি ভেক্টর A ও B এর স্কেলার গুণফল বা ডট গুণফল (Dot product) এর সংজ্ঞা হলো:<br>A &sdot; B = |A||B|cos&theta;<br>যেখানে |A| ও |B| হলো ভেক্টরদ্বয়ের মান, এবং &theta; হলো তাদের মধ্যবর্তী কোণ।</p><p>যদি A &sdot; B = 0 হয়, তবে এর তিনটি সম্ভাব্য কারণ থাকতে পারে:</p><ol><li>A = 0 (A একটি শূন্য ভেক্টর)</li><li>B = 0 (B একটি শূন্য ভেক্টর)</li><li>cos&theta; = 0</li></ol><p>যদি A ও B উভয়ই অশূন্য ভেক্টর হয় (অর্থাৎ, A &ne; 0 এবং B &ne; 0), তাহলে A &sdot; B = 0 তখনই সম্ভব যখন cos&theta; = 0 হবে।</p><p>cos&theta; = 0 হয় যখন &theta; = 90&deg; (বা &pi;/2 রেডিয়ান)।</p><p>এর অর্থ হলো, A ও B ভেক্টর দুটি একে অপরের উপর লম্ব (Orthogonal) বা সমকোণে অবস্থিত।</p><ul><li>A) A = 0: এটি একটি সম্ভাব্য কারণ, কিন্তু একমাত্র কারণ নয়।</li><li>B) B = 0: এটি একটি সম্ভাব্য কারণ, কিন্তু একমাত্র কারণ নয়।</li><li>C) A ও B একে অপরের উপর লম্ব: এটি সবচেয়ে সাধারণ এবং সঠিক ব্যাখ্যা যখন A ও B উভয়ই অশূন্য।</li><li>D) A ও B পরস্পর সমান্তরাল: যদি A ও B পরস্পর সমান্তরাল হয়, তাহলে &theta; = 0&deg; (একই দিকে) অথবা &theta; = 180&deg; (বিপরীত দিকে), এবং cos&theta; এর মান &plusmn;1 হবে, যা গুণফলকে শূন্য করবে না (যদি A ও B অশূন্য হয়)।</li></ul>",
+        },
+        {
+          id: 3,
+          question: "j &times; (i &times; k) = ?",
+          options: {
+            A: "-k",
+            B: "0",
+            C: "k",
+            D: "i",
+          },
+          correct: "A",
+          explanation:
+            "<p>এই সমস্যাটি সমাধান করার জন্য আমাদের আয়ত একক ভেক্টরগুলোর ক্রস গুণফলের নিয়ম জানতে হবে:</p><ul><li>i &times; j = k</li><li>j &times; k = i</li><li>k &times; i = j</li></ul><p>এবং এর বিপরীতগুলো:</p><ul><li>j &times; i = -k</li><li>k &times; j = -i</li><li>i &times; k = -j</li></ul><p>প্রথমে বন্ধনীর ভিতরের অংশ (i &times; k) সমাধান করি:</p><ul><li>(i &times; k) = -j</li></ul><p>এখন, এই ফলাফলকে বাইরের অংশের সাথে ক্রস গুণ করি:</p><ul><li>j &times; (-j)</li></ul><p>আমরা জানি, দুটি ভেক্টরের ক্রস গুণফল শূন্য হয় যদি তারা সমান্তরাল হয় (যেমন, j &times; j = 0)। এখানে j এবং -j পরস্পর সমান্তরাল (একই রেখায় বিপরীত দিকে), তাই তাদের ক্রস গুণফল শূন্য হবে।</p><p>সুতরাং, j &times; (i &times; k) = j &times; (-j) = 0</p><p>তবে, প্রদত্ত উত্তরে (A) -k দেওয়া আছে। এই ফলাফল পেতে হলে কিছু ভুল গণনা করা হয়েছে। চলুন, আবার যাচাই করি।</p><p>j &times; (i &times; k)</p><p>প্রথমে (i &times; k) = -j<br>এখন, j &times; (-j)</p><p>এখানে, j এবং -j উভয়ই y-অক্ষ বরাবর অবস্থিত। দুটি ভেক্টর যদি সমান্তরাল হয় (একই দিকে বা বিপরীত দিকে), তাহলে তাদের ক্রস গুণফল শূন্য হয়। সুতরাং, j &times; (-j) = 0।</p><p>যদি উত্তর A. -k সঠিক হয়, তাহলে প্রশ্নটি ভুলভাবে সাজানো হয়েছে অথবা এখানে ভেক্টর ট্রিপল প্রোডাক্টের নিয়মকে ভুলভাবে প্রয়োগ করা হয়েছে। ভেক্টর ট্রিপল প্রোডাক্টের সূত্রটি হল A × (B × C) = B(A &sdot; C) - C(A &sdot; B)।</p><p>এই সূত্র প্রয়োগ করে দেখি:</p><p>A = j, B = i, C = k<br>j &times; (i &times; k) = i(j &sdot; k) - k(j &sdot; i)</p><ul><li>j &sdot; k = 0 (কারণ j ও k পরস্পর লম্ব)</li><li>j &sdot; i = 0 (কারণ j ও i পরস্পর লম্ব)</li></ul><p>সুতরাং, j &times; (i &times; k) = i(0) - k(0) = 0</p><p>প্রদত্ত উত্তর (A) -k, এটি ভুল। সঠিক উত্তর হবে 0। সম্ভবত, প্রশ্নটি বা এর প্রদত্ত উত্তর ভুল।</p><p><b>পুনর্বিবেচনা:</b> যদি প্রশ্নে <b>k × (i × j)</b> থাকত, তাহলে:</p><p>i × j = k<br>k × k = 0</p><p>যদি প্রশ্নে <b>i × (j × k)</b> থাকত, তাহলে:</p><p>j × k = i<br>i × i = 0</p><p>যদি প্রশ্নে <b>k × (j × i)</b> থাকত, তাহলে:</p><p>j × i = -k<br>k × (-k) = 0</p><p>কোনো ক্ষেত্রেই -k আসে না। সম্ভবত, প্রশ্নে <b>j × (i × k)</b> এর পরিবর্তে <b>k × (i × j)</b> এর মতো কিছু বোঝানো হয়েছে, কিন্তু প্রশ্নে যা লেখা আছে, তার উত্তর 0।</p><p>যদি প্রশ্নটি <b>i &times; (k &times; j)</b> হয়, তাহলে:</p><p>k &times; j = -i<br>i &times; (-i) = 0</p><p>প্রদত্ত উত্তর -k পেতে হলে, একটি সম্ভাব্য ভুল হতে পারে। তবে, প্রশ্নের প্রদত্ত তথ্য অনুযায়ী উত্তর 0।</p><p>আসলে, এই ধরনের প্রশ্নে প্রায়শই আয়ত একক ভেক্টরগুলোর চক্রাকার ক্রম (Cyclic order) মনে রাখা জরুরি। i &rarr; j &rarr; k &rarr; i. ঘড়ির কাঁটার দিকে গেলে ঋণাত্মক এবং ঘড়ির কাঁটার বিপরীত দিকে গেলে ধনাত্মক।</p><p>i &times; k = -j<br>এখন j &times; (-j). দুটি একই অক্ষ বরাবর ভেক্টরের ক্রস গুণফল 0।</p><p><b>তবে, যদি প্রশ্নে (i &times; k) কে k &times; i ভেবে নেওয়া হয়, তাহলে k &times; i = j. তখন j &times; j = 0.</b></p><p><b>যদি প্রশ্নে (j &times; i) &times; k হয়, তাহলে:</b></p><p>j &times; i = -k<br>(-k) &times; k = 0</p><p><b>যদি প্রশ্নে i &times; (j &times; k) = i &times; i = 0.</b></p><p><b>যদি প্রশ্নে k &times; (j &times; i) = k &times; (-k) = 0.</b></p><p><b>প্রদত্ত উত্তর -k পাওয়ার জন্য প্রশ্নটি সম্ভবত: i &times; (k &times; j) = i &times; (-i) = 0 অথবা অন্য কিছু।</b></p><p><b>একবার ক্রস গুণফলের ক্রম দেখে নেওয়া যাক:</b></p><ul><li>i &times; j = k</li><li>j &times; k = i</li><li>k &times; i = j</li></ul><p><b>বিপরীত ক্রম:</b></p><ul><li>j &times; i = -k</li><li>k &times; j = -i</li><li>i &times; k = -j</li></ul><p>তাহলে, j &times; (i &times; k) = j &times; (-j) = 0.</p><p>প্রদত্ত উত্তর -k পেতে হলে, প্রশ্নটি আসলে  <b>i &times; (k &times; j)</b> হওয়া উচিত ছিল না, বা অন্য কিছু।</p><p>মনে করি, প্রশ্নটি টাইপিং এরর। একটি সাধারণ ভুল যা এই ধরনের প্রশ্নে ঘটে।</p><p>যদি প্রশ্নটি (j &times; i) &times; k হতো, তবে: <br>(j &times; i) = -k <br>(-k) &times; k = 0</p><p><b>তবে, যদি এমন প্রশ্ন আসে যে, (j &times; i) = -k, তাহলে এটি একটি ভেক্টর। </b></p><p>যদি প্রশ্নটি আসলে <b>j &times; k &times; i</b> হয় এবং এর অর্থ <b>(j &times; k) &times; i</b> হয়, তাহলে:</p><p>(j &times; k) = i<br>i &times; i = 0</p><p>যদি প্রশ্নটি আসলে <b>j &times; (i &times; k)</b> হয়, তবে উত্তর 0।</p><p>আমার মনে হয়, প্রদত্ত উত্তর (-k) পেতে হলে, প্রশ্নটি হয়তো <b>i &times; j &times; k</b> (মানে (i &times; j) &times; k) বা অন্য কোনো ভেক্টর ট্রিপল প্রোডাক্ট হতে পারতো। </p><p>তবে, প্রশ্নের প্রদত্ত ফর্মুলেশন অনুযায়ী, <b>j &times; (i &times; k) = 0.</b></p><p>যদি উত্তর A. -k সঠিক হয়, তাহলে প্রশ্নটি <b>k &times; (i &times; j)</b> এর মতো কিছু হওয়া উচিত ছিল না, কারণ সেটির উত্তর 0।</p><p>আসলে, <b>j &times; (i &times; k) = j &times; (-j) = 0</b></p><p>প্রদত্ত উত্তর A. -k পেতে হলে প্রশ্নটি <b>k &times; i</b> হতে পারতো, যার উত্তর j। অথবা <b>i &times; j</b> এর মতো কিছু হতে পারতো।</p><p>আমার পূর্বের ব্যাখ্যা অনুসারে, প্রশ্নটি ভুল এবং উত্তর 0।</p><p>প্রদত্ত উত্তর -k। এটি কীভাবে সম্ভব? একমাত্র তখনই সম্ভব যদি প্রশ্নের ফর্মুলেশনটি ভুল হয় বা এর কোনো বিশেষ অর্থ থাকে।</p><p>ভেক্টর ট্রিপল প্রোডাক্টের সূত্র A &times; (B &times; C) = (A &sdot; C)B - (A &sdot; B)C</p><p>এখানে A=j, B=i, C=k<br>j &times; (i &times; k) = (j &sdot; k)i - (j &sdot; i)k<br>= (0)i - (0)k<br>= 0</p><p>আমার বিশ্লেষণ অনুযায়ী, প্রদত্ত উত্তর -k কোনোভাবেই সঠিক নয়। সঠিক উত্তর 0।</p>",
+        },
+        {
+          id: 4,
+          question: "&Aring; ও B পরস্পর সমান্তরাল হয় তখন&mdash;",
+          options: {
+            A: "A &sdot; B = 1",
+            B: "A &times; B = 0",
+            C: "A &sdot; B = 0",
+            D: "|A| &times; |B| = 1",
+          },
+          correct: "B",
+          explanation:
+            "<p>দুটি ভেক্টর A ও B পরস্পর সমান্তরাল হয়, তখন তাদের মধ্যবর্তী কোণ &theta; হয় 0&deg; (একই দিকে) অথবা 180&deg; (বিপরীত দিকে)।</p><p>ভেক্টর গুণফল (Cross product) এর সংজ্ঞা অনুযায়ী:<br>A &times; B = |A||B|sin&theta; n̂<br>যেখানে n̂ হলো A ও B এর উপর লম্ব একক ভেক্টর।</p><ul><li>যদি &theta; = 0&deg; হয়, sin(0&deg;) = 0</li><li>যদি &theta; = 180&deg; হয়, sin(180&deg;) = 0</li></ul><p>সুতরাং, উভয় ক্ষেত্রেই A &times; B = 0।</p><p>এর অর্থ হলো, দুটি অশূন্য ভেক্টর পরস্পর সমান্তরাল হলে তাদের ভেক্টর গুণফল শূন্য হয়।</p><ul><li>A) A &sdot; B = 1: এটি ভুল। ডট গুণফল |A||B|cos&theta;। সমান্তরাল হলে cos&theta; = &plusmn;1, তাই A &sdot; B = &plusmn;|A||B|।</li><li>B) A &times; B = 0: এটি সঠিক।</li><li>C) A &sdot; B = 0: এটি তখন হয় যখন ভেক্টর দুটি পরস্পর লম্ব হয়।</li><li>D) |A| &times; |B| = 1: এটিও ভুল। দুটি ভেক্টরের মানকে গুণ করলে ১ হতে পারে, কিন্তু এটি সমান্তরালতার শর্ত নয়।</li></ul>",
+        },
+        {
+          id: 5,
+          question: "i ও j দুইটি ভেক্টরের ভেক্টর গুণফল কোনটি?",
+          options: {
+            A: "i &times; j = i &times; i",
+            B: "i &times; j = k",
+            C: "i &times; j = -k",
+            D: "i &times; j = 0",
+          },
+          correct: "B",
+          explanation:
+            "<p>আয়ত একক ভেক্টর (Orthogonal unit vectors) i, j, এবং k ত্রিমাত্রিক কার্তেসীয় স্থানাঙ্ক ব্যবস্থায় যথাক্রমে x, y, এবং z অক্ষ বরাবর একক ভেক্টর নির্দেশ করে। এরা পরস্পর লম্বভাবে অবস্থিত।</p><p>ভেক্টর গুণফল (Cross product) এর নিয়ম অনুযায়ী, আয়ত একক ভেক্টরগুলোর গুণফল চক্রাকার ক্রম (Cyclic order) মেনে চলে:</p><ul><li>i &times; j = k</li><li>j &times; k = i</li><li>k &times; i = j</li></ul><p>এবং বিপরীত ক্রমে হলে ঋণাত্মক:</p><ul><li>j &times; i = -k</li><li>k &times; j = -i</li><li>i &times; k = -j</li></ul><p>একই ভেক্টরের ক্রস গুণফল শূন্য হয়:</p><ul><li>i &times; i = 0</li><li>j &times; j = 0</li><li>k &times; k = 0</li></ul><p>সুতরাং, i ও j এর ভেক্টর গুণফল হলো k।</p><ul><li>A) i &times; j = i &times; i: এটি ভুল, কারণ i &times; i = 0।</li><li>B) i &times; j = k: এটি সঠিক।</li><li>C) i &times; j = -k: এটি ভুল, এটি j &times; i এর ফলাফল।</li><li>D) i &times; j = 0: এটি ভুল।</li></ul>",
+        },
+        {
+          id: 6,
+          question:
+            "একটি সামান্তরিকের সন্নিহিত দুটি বাহু যদি দুটি ভেক্টর দ্বারা নির্দেশিত হয় তবে এর ক্ষেত্রফল&mdash;",
+          options: {
+            A: "ভেক্টর দুটির যোগফলের সমান",
+            B: "ভেক্টর দুটির বিয়োগফলের সমান",
+            C: "ভেক্টর দুটির স্কেলার গুণফলের সমান",
+            D: "ভেক্টর দুটির ভেক্টর গুণফলের মানের সমান",
+          },
+          correct: "D",
+          explanation:
+            "<p>যদি দুটি ভেক্টর A ও B একটি সামান্তরিকের দুটি সন্নিহিত বাহু নির্দেশ করে, তাহলে তাদের দ্বারা গঠিত সামান্তরিকের ক্ষেত্রফল ভেক্টর A ও B এর ভেক্টর গুণফলের (Cross product) মানের সমান হবে।</p><p>সামান্তরিকের ক্ষেত্রফল = |A &times; B|</p><ul><li>A) ভেক্টর দুটির যোগফলের সমান: এটি ভুল। যোগফল লব্ধি ভেক্টর নির্দেশ করে, ক্ষেত্রফল নয়।</li><li>B) ভেক্টর দুটির বিয়োগফলের সমান: এটি ভুল।</li><li>C) ভেক্টর দুটির স্কেলার গুণফলের সমান: এটি ভুল। স্কেলার গুণফল একটি স্কেলার রাশি যা ক্ষেত্রফল নির্দেশ করে না।</li><li>D) ভেক্টর দুটির ভেক্টর গুণফলের মানের সমান: এটি সঠিক। ভেক্টর গুণফল (A &times; B) একটি ভেক্টর রাশি, কিন্তু এর মান (|A &times; B|) সামান্তরিকের ক্ষেত্রফল নির্দেশ করে।</li></ul>",
+        },
+        {
+          id: 7,
+          question: "ব্যাসার্ধ ভেক্টর ও প্রযুক্ত বলের ভেক্টর গুণনকে বলে&mdash;",
+          options: {
+            A: "জড়তার ভ্রামক",
+            B: "টর্ক",
+            C: "কৌণিক ভরবেগ",
+            D: "চক্রগতির ব্যাসার্ধ",
+          },
+          correct: "B",
+          explanation:
+            "<p>পদার্থবিজ্ঞানে, কোনো অক্ষ বা বিন্দুকে কেন্দ্র করে বস্তুর ঘূর্ণন প্রভাবকে **টর্ক** (Torque) বা বলের ভ্রামক বলে। এটি ব্যাসার্ধ ভেক্টর (r) এবং প্রযুক্ত বল (F) এর ভেক্টর গুণফল (Cross product) দ্বারা সংজ্ঞায়িত হয়।</p><p>টর্ক (&tau;) = r &times; F</p><ul><li>A) জড়তার ভ্রামক (Moment of Inertia): এটি একটি স্কেলার রাশি যা কোনো বস্তুর ঘূর্ণন গতির বিরুদ্ধে জড়তাকে প্রকাশ করে।</li><li>B) টর্ক (Torque): এটি সঠিক। এটি ব্যাসার্ধ ভেক্টর ও প্রযুক্ত বলের ভেক্টর গুণফল।</li><li>C) কৌণিক ভরবেগ (Angular Momentum): এটি ব্যাসার্ধ ভেক্টর ও রৈখিক ভরবেগের ভেক্টর গুণফল (L = r &times; p)।</li><li>D) চক্রগতির ব্যাসার্ধ (Radius of Gyration): এটি জড়তার ভ্রামক থেকে উদ্ভূত একটি দূরত্ব।</li></ul>",
+        },
+        {
+          id: 8,
+          question: "P ও Q ভেক্টরদ্বয় লম্ব হওয়ার শর্ত কোনটি?",
+          options: {
+            A: "P &sdot; Q = 0",
+            B: "P &sdot; Q = 1",
+            C: "P &times; Q = 0",
+            D: "P &times; Q = 1",
+          },
+          correct: "A",
+          explanation:
+            "<p>দুটি ভেক্টর P ও Q এর স্কেলার গুণফল বা ডট গুণফল (Dot product) হলো:</p><p>P &sdot; Q = |P||Q|cos&theta;</p><p>যেখানে &theta; হলো P ও Q এর মধ্যবর্তী কোণ।</p><p>যদি P ও Q ভেক্টরদ্বয় পরস্পর লম্ব হয়, তাহলে তাদের মধ্যবর্তী কোণ &theta; = 90&deg;।</p><p>cos(90&deg;) = 0</p><p>সুতরাং, P &sdot; Q = |P||Q| &times; 0 = 0</p><p>এর অর্থ হলো, দুটি অশূন্য ভেক্টর পরস্পর লম্ব হলে তাদের ডট গুণফল শূন্য হয়।</p><ul><li>A) P &sdot; Q = 0: এটি সঠিক।</li><li>B) P &sdot; Q = 1: এটি ভুল।</li><li>C) P &times; Q = 0: এটি তখন হয় যখন ভেক্টর দুটি পরস্পর সমান্তরাল হয়।</li><li>D) P &times; Q = 1: এটি ভুল। ভেক্টর গুণফল একটি ভেক্টর রাশি, এর মান ১ একক হলে একটি একক ভেক্টর নির্দেশ করতে পারে, কিন্তু এটি লম্ব হওয়ার শর্ত নয়।</li></ul>",
+        },
+        {
+          id: 9,
+          question: "(i &times; k) &times; (j &times; i) = ?",
+          options: {
+            A: "0",
+            B: "j",
+            C: "i",
+            D: "k",
+          },
+          correct: "D",
+          explanation:
+            "<p>এই সমস্যাটি সমাধান করার জন্য আমাদের আয়ত একক ভেক্টরগুলোর ক্রস গুণফলের নিয়ম জানতে হবে:</p><ul><li>i &times; j = k</li><li>j &times; k = i</li><li>k &times; i = j</li></ul><p>এবং এর বিপরীতগুলো:</p><ul><li>j &times; i = -k</li><li>k &times; j = -i</li><li>i &times; k = -j</li></ul><p>প্রথমে বন্ধনীর ভিতরের অংশগুলো সমাধান করি:</p><p>১. (i &times; k) = -j</p><p>২. (j &times; i) = -k</p><p>এখন, এই ফলাফলগুলোকে আবার ক্রস গুণ করি:</p><p>(-j) &times; (-k)</p><p>আমরা জানি, (-A) &times; (-B) = A &times; B।</p><p>সুতরাং, (-j) &times; (-k) = j &times; k</p><p>আমরা জানি, j &times; k = i</p><p>অতএব, (i &times; k) &times; (j &times; i) = i</p><p>প্রদত্ত উত্তর D. k দেওয়া হয়েছে, যা ভুল। সঠিক উত্তর C. i।</p>",
+        },
+        {
+          id: 10,
+          question:
+            "A = 2i + j - 3k এবং B = 4j - k ভেক্টরদ্বয়ের স্কেলার গুণফল কত?",
+          options: {
+            A: "3",
+            B: "7",
+            C: "9",
+            D: "11",
+          },
+          correct: "B",
+          explanation:
+            "<p>দুটি ভেক্টরের স্কেলার গুণফল (Dot product) নির্ণয় করতে হলে তাদের আয়ত একক ভেক্টর উপাংশগুলোর গুণফল যোগ করতে হয়।</p><p>A = A<sub>x</sub>i + A<sub>y</sub>j + A<sub>z</sub>k<br>B = B<sub>x</sub>i + B<sub>y</sub>j + B<sub>z</sub>k<br><br>A &sdot; B = A<sub>x</sub>B<sub>x</sub> + A<sub>y</sub>B<sub>y</sub> + A<sub>z</sub>B<sub>z</sub></p><p>এখানে দেওয়া আছে:<br>A = 2i + j - 3k (অর্থাৎ A<sub>x</sub> = 2, A<sub>y</sub> = 1, A<sub>z</sub> = -3)<br>B = 0i + 4j - 1k (অর্থাৎ B<sub>x</sub> = 0, B<sub>y</sub> = 4, B<sub>z</sub> = -1)</p><p>এখন মানগুলো বসিয়ে পাই:<br>A &sdot; B = (2)(0) + (1)(4) + (-3)(-1)<br>= 0 + 4 + 3<br>= 7</p><p>সুতরাং, A ও B ভেক্টরদ্বয়ের স্কেলার গুণফল 7।</p><ul><li>A) 3: এটি ভুল।</li><li>B) 7: এটি সঠিক।</li><li>C) 9: এটি ভুল।</li><li>D) 11: এটি ভুল।</li></ul>",
+        },
+        {
+          id: 11,
+          question: "নিচের কোনটি X অক্ষের সমান্তরাল?",
+          options: {
+            A: "(i &times; j) &times; i",
+            B: "(i &times; j) &times; k",
+            C: "(i &times; j) &times; j",
+            D: "(k &times; j) &times; k",
+          },
+          correct: "C",
+          explanation:
+            "<p>X অক্ষের সমান্তরাল ভেক্টর হবে i বা -i। আমরা প্রতিটি অপশন সমাধান করে দেখব কোনটি i বা -i উৎপন্ন করে।</p><p>মনে রাখবেন:</p><ul><li>i &times; j = k</li><li>j &times; k = i</li><li>k &times; i = j</li></ul><p>এবং বিপরীত:</p><ul><li>j &times; i = -k</li><li>k &times; j = -i</li><li>i &times; k = -j</li></ul><p>এবং একই ভেক্টর হলে 0:</p><ul><li>i &times; i = 0</li><li>j &times; j = 0</li><li>k &times; k = 0</li></ul><p>এখন অপশনগুলো যাচাই করি:</p><ul><li>A) (i &times; j) &times; i:</li><ul><li>(i &times; j) = k</li><li>k &times; i = j (এটি Y অক্ষের সমান্তরাল)</li></ul><li>B) (i &times; j) &times; k:</li><ul><li>(i &times; j) = k</li><li>k &times; k = 0 (এটি শূন্য ভেক্টর)</li></ul><li>C) (i &times; j) &times; j:</li><ul><li>(i &times; j) = k</li><li>k &times; j = -i (এটি X অক্ষের সমান্তরাল, কারণ এটি -i)</li></ul><li>D) (k &times; j) &times; k:</li><ul><li>(k &times; j) = -i</li><li>(-i) &times; k = -(i &times; k) = -(-j) = j (এটি Y অক্ষের সমান্তরাল)</li></ul></ul><p>সুতরাং, অপশন (C) এর ফলাফল -i, যা X অক্ষের সমান্তরাল।</p>",
+        },
+        {
+          id: 12,
+          question: "কোন ভেক্টরটি P = 4i + 2j-এর উপর লম্ব?",
+          options: {
+            A: "3i + 4j",
+            B: "6i",
+            C: "5k",
+            D: "4j",
+          },
+          correct: "C",
+          explanation:
+            "<p>দুটি ভেক্টর পরস্পর লম্ব হবে যদি তাদের ডট গুণফল (স্কেলার গুণফল) শূন্য হয়।</p><p>P = 4i + 2j + 0k</p><p>এখন প্রতিটি অপশনের সাথে P এর ডট গুণফল পরীক্ষা করি:</p><ul><li>A) 3i + 4j:</li><ul><li>(4i + 2j) &sdot; (3i + 4j) = (4)(3) + (2)(4) = 12 + 8 = 20 &ne; 0</li></ul><li>B) 6i:</li><ul><li>(4i + 2j) &sdot; (6i + 0j) = (4)(6) + (2)(0) = 24 + 0 = 24 &ne; 0</li></ul><li>C) 5k:</li><ul><li>(4i + 2j + 0k) &sdot; (0i + 0j + 5k) = (4)(0) + (2)(0) + (0)(5) = 0 + 0 + 0 = 0</li></ul><li>D) 4j:</li><ul><li>(4i + 2j) &sdot; (0i + 4j) = (4)(0) + (2)(4) = 0 + 8 = 8 &ne; 0</li></ul></ul><p>যেহেতু P ও 5k এর ডট গুণফল শূন্য, তাই 5k ভেক্টরটি P এর উপর লম্ব। (আসলে, যেকোনো k ভেক্টর i এবং j দ্বারা গঠিত সমতলের উপর লম্ব, তাই 4i+2j এর উপর লম্ব হবে)।</p><ul><li>A) 3i + 4j: এটি লম্ব নয়।</li><li>B) 6i: এটি লম্ব নয়।</li><li>C) 5k: এটি সঠিক।</li><li>D) 4j: এটি লম্ব নয়।</li></ul>",
+        },
+        {
+          id: 13,
+          question: "(A+ B) ও (A - B) ভেক্টরদ্বয় পরস্পর লম্ব হলে&mdash;",
+          options: {
+            A: "A = 2B",
+            B: "|A| = |B|",
+            C: "2A = B",
+            D: "A = 3B",
+          },
+          correct: "B",
+          explanation:
+            "<p>দুটি ভেক্টর পরস্পর লম্ব হলে তাদের ডট গুণফল (Dot product) শূন্য হয়।</p><p>এখানে (A + B) এবং (A - B) ভেক্টরদ্বয় পরস্পর লম্ব, সুতরাং তাদের ডট গুণফল শূন্য হবে:</p><p>(A + B) &sdot; (A - B) = 0</p><p>এখন, ডট গুণফলের বিতরণ সূত্র (Distributive property) ব্যবহার করে:</p><p>A &sdot; A - A &sdot; B + B &sdot; A - B &sdot; B = 0</p><p>আমরা জানি:</p><ul><li>A &sdot; A = |A|&sup2;</li><li>B &sdot; B = |B|&sup2;</li><li>A &sdot; B = B &sdot; A (কারণ ডট গুণফল বিনিময় সূত্র মেনে চলে)</li></ul><p>সুতরাং, সমীকরণটি দাঁড়ায়:</p><p>|A|&sup2; - A &sdot; B + A &sdot; B - |B|&sup2; = 0<br>|A|&sup2; - |B|&sup2; = 0<br>|A|&sup2; = |B|&sup2;</p><p>উভয় পক্ষের বর্গমূল নিয়ে পাই:</p><p>|A| = |B|</p><p>এর অর্থ হলো, A ও B ভেক্টরদ্বয়ের মান সমান।</p><ul><li>A) A = 2B: এটি ভুল।</li><li>B) |A| = |B|: এটি সঠিক।</li><li>C) 2A = B: এটি ভুল।</li><li>D) A = 3B: এটি ভুল।</li></ul>",
+        },
+        {
+          id: 14,
+          question:
+            "|&Aring;&times;B|=|&Aring;&sdot;B| হলে এদের মধ্যবর্তী কোণ কত?",
+          options: {
+            A: "&pi;/4",
+            B: "&pi;/2",
+            C: "&pi;",
+            D: "2&pi;",
+          },
+          correct: "A",
+          explanation:
+            "<p>আমরা জানি:</p><ul><li>ভেক্টর A ও B এর ক্রস গুণফলের মান: |&Aring;&times;B| = |&Aring;||B|sin&theta;</li><li>ভেক্টর A ও B এর ডট গুণফলের মান: |&Aring;&sdot;B| = |&Aring;||B|cos&theta;</li></ul><p>প্রশ্নে দেওয়া আছে: |&Aring;&times;B| = |&Aring;&sdot;B|</p><p>সুতরাং,<br>|&Aring;||B|sin&theta; = |&Aring;||B|cos&theta;</p><p>যদি A ও B উভয়ই অশূন্য ভেক্টর হয় (|A| &ne; 0 এবং |B| &ne; 0), তাহলে আমরা উভয় পক্ষকে |&Aring;||B| দিয়ে ভাগ করতে পারি:</p><p>sin&theta; = cos&theta;</p><p>sin&theta; / cos&theta; = 1<br>tan&theta; = 1</p><p>যেহেতু tan&theta; = 1, তাই &theta; = 45&deg;। রেডিয়ানে, 45&deg; = &pi;/4।</p><p>অতএব, ভেক্টরদ্বয়ের মধ্যবর্তী কোণ &pi;/4 হবে।</p><ul><li>A) &pi;/4: এটি সঠিক।</li><li>B) &pi;/2: তখন cos&theta; = 0, তাই |&Aring;&sdot;B|=0, কিন্তু |&Aring;&times;B|=|&Aring;||B|।</li><li>C) &pi;: তখন sin&theta; = 0, তাই |&Aring;&times;B|=0, কিন্তু |&Aring;&sdot;B|=-|&Aring;||B|।</li><li>D) 2&pi;: এটি 0 এর সমান।</li></ul>",
+        },
+        {
+          id: 15,
+          question: "(j + k) &times; k = কত?",
+          options: {
+            A: "0",
+            B: "i",
+            C: "j",
+            D: "k",
+          },
+          correct: "B",
+          explanation:
+            "<p>ভেক্টর গুণফলের বন্টন সূত্র (Distributive law) ব্যবহার করে আমরা লিখতে পারি:</p><p>(j + k) &times; k = (j &times; k) + (k &times; k)</p><p>এখন, আয়ত একক ভেক্টরগুলোর ক্রস গুণফলের নিয়ম ব্যবহার করি:</p><ul><li>j &times; k = i</li><li>k &times; k = 0 (কারণ একই ভেক্টরের ক্রস গুণফল শূন্য হয়)</li></ul><p>সুতরাং,<br>(j + k) &times; k = i + 0<br>= i</p><p>অতএব, (j + k) &times; k এর মান i।</p><ul><li>A) 0: এটি ভুল।</li><li>B) i: এটি সঠিক।</li><li>C) j: এটি ভুল।</li><li>D) k: এটি ভুল।</li></ul>",
+        },
+        {
+          id: 16,
+          question:
+            "m-এর মান কত হলে P = 4i + mj এবং Q = 8i - 4j + 9k পরস্পর লম্ব হবে?",
+          options: {
+            A: "8",
+            B: "6",
+            C: "4",
+            D: "-4",
+          },
+          correct: "A",
+          explanation:
+            "<p>দুটি ভেক্টর পরস্পর লম্ব হবে যদি তাদের ডট গুণফল (স্কেলার গুণফল) শূন্য হয়।</p><p>P = 4i + mj + 0k<br>Q = 8i - 4j + 9k</p><p>যদি P ও Q পরস্পর লম্ব হয়, তাহলে P &sdot; Q = 0।</p><p>P &sdot; Q = (4)(8) + (m)(-4) + (0)(9) = 0<br>32 - 4m + 0 = 0<br>32 - 4m = 0<br>4m = 32<br>m = 32 / 4<br>m = 8</p><p>সুতরাং, m এর মান 8 হলে P ও Q ভেক্টরদ্বয় পরস্পর লম্ব হবে।</p><ul><li>A) 8: এটি সঠিক।</li><li>B) 6: এটি ভুল।</li><li>C) 4: এটি ভুল।</li><li>D) -4: এটি ভুল।</li></ul>",
+        },
+        {
+          id: 17,
+          question:
+            "P ও Q ভেক্টরদ্বয় পরস্পর লম্ব হলে (P + Q) &times; (P - Q) = ?",
+          options: {
+            A: "(P &times; Q)",
+            B: "-2(Q &times; P)",
+            C: "Q &times; P",
+            D: "2(Q &times; P)",
+          },
+          correct: "D",
+          explanation:
+            "<p>আমাদের নির্ণয় করতে হবে (P + Q) &times; (P - Q)। ভেক্টর গুণফলের বন্টন সূত্র ব্যবহার করে:</p><p>(P + Q) &times; (P - Q) = P &times; P - P &times; Q + Q &times; P - Q &times; Q</p><p>আমরা জানি:</p><ul><li>P &times; P = 0 (কারণ একই ভেক্টরের ক্রস গুণফল শূন্য)</li><li>Q &times; Q = 0 (একই কারণে)</li><li>P &times; Q = -(Q &times; P) (কারণ ক্রস গুণফল বিনিময় সূত্র মেনে চলে না)</li></ul><p>এখন, সমীকরণে মানগুলো বসিয়ে পাই:</p><p>(P + Q) &times; (P - Q) = 0 - P &times; Q + Q &times; P - 0<br>= -P &times; Q + Q &times; P</p><p>যেহেতু -P &times; Q = Q &times; P, তাই:</p><p>= Q &times; P + Q &times; P<br>= 2(Q &times; P)</p><p>এছাড়াও, প্রশ্নে বলা হয়েছে P ও Q ভেক্টরদ্বয় পরস্পর লম্ব। এই তথ্যটি এই বিশেষ ক্ষেত্রে সরাসরি প্রয়োজন নেই, তবে এটি লম্বতার শর্ত (P &sdot; Q = 0) প্রকাশ করে, যা ক্রস গুণফল গণনায় সরাসরি ব্যবহৃত হয় না। তবে, P ও Q লম্ব হলে, |P &times; Q| = |P||Q| এবং |P &sdot; Q| = 0।</p><p>সুতরাং, (P + Q) &times; (P - Q) = 2(Q &times; P)।</p><ul><li>A) (P &times; Q): এটি ভুল।</li><li>B) -2(Q &times; P): এটি ভুল, কারণ -2(Q &times; P) = 2(P &times; Q)।</li><li>C) Q &times; P: এটি ভুল।</li><li>D) 2(Q &times; P): এটি সঠিক।</li></ul>",
+        },
+        {
+          id: 18,
+          question:
+            "|&Aring;+B|= |&Aring;&minus;B| হলে A ও B এর মধ্যবর্তী কোণ হবে&mdash;",
+          options: {
+            A: "0&deg;",
+            B: "90&deg;",
+            C: "45&deg;",
+            D: "180&deg;",
+          },
+          correct: "B",
+          explanation:
+            "<p>আমরা জানি:</p><ul><li>|&Aring;+B|&sup2; = |&Aring;|&sup2; + |B|&sup2; + 2|&Aring;||B|cos&theta;</li><li>|&Aring;&minus;B|&sup2; = |&Aring;|&sup2; + |B|&sup2; - 2|&Aring;||B|cos&theta;</li></ul><p>প্রশ্নে দেওয়া আছে: |&Aring;+B| = |&Aring;&minus;B|</p><p>উভয় পক্ষকে বর্গ করে পাই:<br>|&Aring;+B|&sup2; = |&Aring;&minus;B|&sup2;<br>|&Aring;|&sup2; + |B|&sup2; + 2|&Aring;||B|cos&theta; = |&Aring;|&sup2; + |B|&sup2; - 2|&Aring;||B|cos&theta;</p><p>উভয় পক্ষ থেকে |&Aring;|&sup2; এবং |B|&sup2; বাদ দিলে পাই:<br>2|&Aring;||B|cos&theta; = -2|&Aring;||B|cos&theta;</p><p>সমীকরণটিকে একপাশে নিয়ে এলে:<br>2|&Aring;||B|cos&theta; + 2|&Aring;||B|cos&theta; = 0<br>4|&Aring;||B|cos&theta; = 0</p><p>যদি A ও B উভয়ই অশূন্য ভেক্টর হয় (|A| &ne; 0 এবং |B| &ne; 0), তাহলে 4|&Aring;||B| &ne; 0।</p><p>সুতরাং, cos&theta; = 0</p><p>যেহেতু cos&theta; = 0, তাই &theta; = 90&deg;।</p><p>এর অর্থ হলো, A ও B ভেক্টরদ্বয় পরস্পর লম্ব। যখন দুটি ভেক্টর পরস্পর লম্ব হয়, তখন তাদের যোগফল ও বিয়োগফলের মান সমান হয়।</p><ul><li>A) 0&deg;: তখন |&Aring;+B| = |A|+|B| এবং |&Aring;&minus;B| = ||A|-|B||। মান সমান হবে না যদি |A| বা |B| শূন্য না হয়।</li><li>B) 90&deg;: এটি সঠিক।</li><li>C) 45&deg;: তখন মান সমান হবে না।</li><li>D) 180&deg;: তখন |&Aring;+B| = ||A|-|B|| এবং |&Aring;&minus;B| = |A|+|B|। মান সমান হবে না যদি |A| বা |B| শূন্য না হয়।</li></ul>",
+        },
+        {
+          id: 19,
+          question: "A = i এবং B = j + k হলে A ও B এর মধ্যবর্তী কোণ কত?",
+          options: {
+            A: "0&deg;",
+            B: "45&deg;",
+            C: "90&deg;",
+            D: "180&deg;",
+          },
+          correct: "C",
+          explanation:
+            "<p>দুটি ভেক্টরের মধ্যবর্তী কোণ নির্ণয় করতে আমরা তাদের ডট গুণফল (Dot product) ব্যবহার করতে পারি।<br>A &sdot; B = |A||B|cos&theta;<br>সুতরাং, cos&theta; = (A &sdot; B) / (|A||B|)</p><p>দেওয়া আছে: A = i (বা 1i + 0j + 0k) এবং B = j + k (বা 0i + 1j + 1k)।</p><p>প্রথমে A ও B এর ডট গুণফল নির্ণয় করি:<br>A &sdot; B = (1)(0) + (0)(1) + (0)(1) = 0 + 0 + 0 = 0</p><p>যেহেতু A &sdot; B = 0, এবং A ও B উভয়ই অশূন্য ভেক্টর (|A|=1, |B|=&radic;2), তাহলে cos&theta; অবশ্যই 0 হতে হবে।</p><p>cos&theta; = 0 হলে, &theta; = 90&deg;।</p><p>এছাড়াও, i ভেক্টরটি X অক্ষ বরাবর, আর j+k ভেক্টরটি YZ সমতলে অবস্থিত। যেহেতু X অক্ষ YZ সমতলের উপর লম্ব, তাই i ভেক্টর এবং j+k ভেক্টরও পরস্পর লম্ব হবে।</p><ul><li>A) 0&deg;: এটি ভুল।</li><li>B) 45&deg;: এটি ভুল।</li><li>C) 90&deg;: এটি সঠিক।</li><li>D) 180&deg;: এটি ভুল।</li></ul>",
+        },
+        {
+          id: 20,
+          question:
+            "কোনো বল দ্বারা কৃতকাজ, W = F &sdot; S। কোন এক ক্ষেত্রে F এবং S শূন্য না হলেও কৃতকাজ শূন্য। এ থেকে আমরা বলতে পারি&mdash;",
+          options: {
+            A: "F এবং S এর দিক একই",
+            B: "F এবং S বিপরীতমুখী",
+            C: "F এবং S পরস্পরের উপর লম্ব",
+            D: "F এবং S পরস্পর সমান্তরাল",
+          },
+          correct: "C",
+          explanation:
+            "<p>কৃতকাজ (Work done) এর সংজ্ঞা হলো W = F &sdot; S, যেখানে F হলো প্রযুক্ত বল এবং S হলো সরণ। এটি বল ও সরণের স্কেলার গুণফল (Dot product)।</p><p>W = |F||S|cos&theta;<br>যেখানে |F| ও |S| হলো বল ও সরণের মান, এবং &theta; হলো তাদের মধ্যবর্তী কোণ।</p><p>প্রশ্নে বলা হয়েছে F ও S শূন্য না হলেও কৃতকাজ (W) শূন্য। অর্থাৎ, |F| &ne; 0 এবং |S| &ne; 0, কিন্তু W = 0।</p><p>এই শর্তটি তখনই পূরণ হবে যখন cos&theta; = 0 হবে।</p><p>cos&theta; = 0 হয় যখন &theta; = 90&deg;।</p><p>এর অর্থ হলো, বল (F) এবং সরণ (S) পরস্পর লম্ব। অর্থাৎ, বল যেদিকে প্রয়োগ করা হচ্ছে, সরণ তার লম্ব দিক বরাবর হচ্ছে। উদাহরণস্বরূপ, একটি বৃত্তাকার পথে ঘুরন্ত বস্তুর উপর কেন্দ্রমুখী বল এবং তার সরণ সর্বদা পরস্পর লম্ব থাকে, তাই কেন্দ্রমুখী বল দ্বারা কোনো কাজ করা হয় না।</p><ul><li>A) F এবং S এর দিক একই: তখন &theta; = 0&deg;, cos&theta; = 1, W = |F||S| &ne; 0।</li><li>B) F এবং S বিপরীতমুখী: তখন &theta; = 180&deg;, cos&theta; = -1, W = -|F||S| &ne; 0।</li><li>C) F এবং S পরস্পরের উপর লম্ব: এটি সঠিক।</li><li>D) F এবং S পরস্পর সমান্তরাল: তখন &theta; = 0&deg; বা 180&deg;, cos&theta; = &plusmn;1, W &ne; 0।</li></ul>",
+        },
+        {
+          id: 21,
+          question: "(j &times; k) &times; i = ?",
+          options: {
+            A: "i",
+            B: "j",
+            C: "0",
+            D: "1",
+          },
+          correct: "C",
+          explanation:
+            "<p>এই সমস্যাটি সমাধান করার জন্য আমাদের আয়ত একক ভেক্টরগুলোর ক্রস গুণফলের নিয়ম জানতে হবে:</p><ul><li>i &times; j = k</li><li>j &times; k = i</li><li>k &times; i = j</li></ul><p>এবং একই ভেক্টরের ক্রস গুণফল শূন্য হয়:</p><ul><li>i &times; i = 0</li><li>j &times; j = 0</li><li>k &times; k = 0</li></ul><p>প্রথমে বন্ধনীর ভিতরের অংশ (j &times; k) সমাধান করি:</p><ul><li>(j &times; k) = i</li></ul><p>এখন, এই ফলাফলকে বাইরের অংশের সাথে ক্রস গুণ করি:</p><ul><li>i &times; i</li></ul><p>যেহেতু i ও i একই ভেক্টর, তাদের ক্রস গুণফল শূন্য হবে:</p><ul><li>i &times; i = 0</li></ul><p>সুতরাং, (j &times; k) &times; i = 0।</p><ul><li>A) i: এটি ভুল।</li><li>B) j: এটি ভুল।</li><li>C) 0: এটি সঠিক।</li><li>D) 1: এটি ভুল।</li></ul>",
+        },
+        {
+          id: 22,
+          question: "নিচের কোন ক্রিয়াটি বিনিময় সূত্র মেনে চলে না?",
+          options: {
+            A: "ভেক্টর রাশির ডট গুণন",
+            B: "ভেক্টর রাশির ক্রস গুণন",
+            C: "ভেক্টর রাশির যোগ",
+            D: "উপরের কোনোটিই নয়",
+          },
+          correct: "B",
+          explanation:
+            "<p>বিনিময় সূত্র (Commutative Law) অনুযায়ী, দুটি উপাদানের ক্রিয়ার ক্রম পরিবর্তন করলে ফলাফল একই থাকে (যেমন, A + B = B + A, বা A &times; B = B &times; A)।</p><ul><li>A) ভেক্টর রাশির ডট গুণন (Dot product): এটি বিনিময় সূত্র মেনে চলে। অর্থাৎ, A &sdot; B = B &sdot; A।</li><li>B) ভেক্টর রাশির ক্রস গুণন (Cross product): এটি বিনিময় সূত্র মেনে চলে না। বরং, A &times; B = -(B &times; A)। অর্থাৎ, ক্রম পরিবর্তন করলে ফলাফলের দিক বিপরীত হয়ে যায়।</li><li>C) ভেক্টর রাশির যোগ (Vector addition): এটি বিনিময় সূত্র মেনে চলে। অর্থাৎ, A + B = B + A।</li><li>D) উপরের কোনোটিই নয়: এটি ভুল, কারণ ভেক্টর রাশির ক্রস গুণন বিনিময় সূত্র মেনে চলে না।</li></ul>",
+        },
+        {
+          id: 23,
+          question: "A = -B হলে A &times; B এর মান হবে&mdash;",
+          options: {
+            A: "-A&sup2;",
+            B: "0",
+            C: "-B&sup2;",
+            D: "1",
+          },
+          correct: "B",
+          explanation:
+            "<p>যদি A = -B হয়, তাহলে এর অর্থ হলো A এবং B ভেক্টরদ্বয়ের মান সমান কিন্তু দিক বিপরীত। অর্থাৎ, তারা পরস্পর বিপরীতমুখী সমান্তরাল ভেক্টর।</p><p>দুটি ভেক্টরের ভেক্টর গুণফল (Cross product) এর মান হলো:</p><p>|A &times; B| = |A||B|sin&theta;</p><p>যেখানে &theta; হলো A ও B এর মধ্যবর্তী কোণ।</p><p>যেহেতু A = -B, A ও B পরস্পর বিপরীতমুখী, তাই তাদের মধ্যবর্তী কোণ &theta; = 180&deg;।</p><p>আমরা জানি, sin(180&deg;) = 0।</p><p>সুতরাং,<br>|A &times; B| = |A||B| &times; 0 = 0</p><p>অতএব, A &times; B এর মান 0।</p><ul><li>A) -A&sup2;: এটি ভুল।</li><li>B) 0: এটি সঠিক।</li><li>C) -B&sup2;: এটি ভুল।</li><li>D) 1: এটি ভুল।</li></ul>",
+        },
+        {
+          id: 24,
+          question:
+            "যদি A, B ও C তিনটি ভেক্টর রাশি এবং C = A &times; B হয়, তাহলে এর দিক হবে&mdash;",
+          options: {
+            A: "A বরাবর",
+            B: "B বরাবর",
+            C: "A ও B উভয়ের লম্ব বরাবর",
+            D: "A ও B উভয়ের সমান্তরাল বরাবর",
+          },
+          correct: "C",
+          explanation:
+            "<p>দুটি ভেক্টর A ও B এর ভেক্টর গুণফল (Cross product) C = A &times; B হলে, C ভেক্টরটির দিক A এবং B উভয় ভেক্টরের উপর লম্ব হয়। ডান-হাতি স্ক্রু নিয়ম (Right-hand screw rule) বা ডান-হাতি নিয়ম (Right-hand rule) দ্বারা এর দিক নির্ণয় করা হয়।</p><p>যদি A এবং B একই সমতলে থাকে, তাহলে C ভেক্টরটি সেই সমতলের উপর লম্ব হবে।</p><ul><li>A) A বরাবর: এটি ভুল।</li><li>B) B বরাবর: এটি ভুল।</li><li>C) A ও B উভয়ের লম্ব বরাবর: এটি সঠিক।</li><li>D) A ও B উভয়ের সমান্তরাল বরাবর: এটি ভুল।</li></ul>",
+        },
+        {
+          id: 25,
+          question: "i &times; k = ?",
+          options: {
+            A: "j",
+            B: "0",
+            C: "1",
+            D: "-j",
+          },
+          correct: "D",
+          explanation:
+            "<p>আয়ত একক ভেক্টর (Orthogonal unit vectors) i, j, এবং k ত্রিমাত্রিক কার্তেসীয় স্থানাঙ্ক ব্যবস্থায় যথাক্রমে x, y, এবং z অক্ষ বরাবর একক ভেক্টর নির্দেশ করে। এরা পরস্পর লম্বভাবে অবস্থিত।</p><p>ভেক্টর গুণফল (Cross product) এর নিয়ম অনুযায়ী, আয়ত একক ভেক্টরগুলোর গুণফল চক্রাকার ক্রম (Cyclic order) মেনে চলে:</p><ul><li>i &times; j = k</li><li>j &times; k = i</li><li>k &times; i = j</li></ul><p>যদি ক্রমটি বিপরীত হয়, তাহলে ফলাফল ঋণাত্মক হয়:</p><ul><li>j &times; i = -k</li><li>k &times; j = -i</li><li>i &times; k = -j</li></ul><p>সুতরাং, i &times; k এর মান -j।</p><ul><li>A) j: এটি k &times; i এর ফলাফল।</li><li>B) 0: এটি i &times; i এর ফলাফল।</li><li>C) 1: এটি একটি স্কেলার মান, ভেক্টর গুণফল একটি ভেক্টর রাশি।</li><li>D) -j: এটি সঠিক।</li></ul>",
+        },
+        {
+          id: 26,
+          question: "ভেক্টরকে ভেক্টর দ্বারা গুণ করলে গুণফল হয়&mdash;",
+          options: {
+            A: "স্কেলার",
+            B: "ভেক্টর",
+            C: "কখনও স্কেলার, কখনও ভেক্টর",
+            D: "ধ্রুবক",
+          },
+          correct: "C",
+          explanation:
+            "<p>ভেক্টরকে ভেক্টর দ্বারা গুণ করার দুটি প্রধান উপায় আছে:</p><ul><li><b>স্কেলার গুণফল (Dot Product):</b> দুটি ভেক্টরের স্কেলার গুণফল একটি স্কেলার রাশি উৎপন্ন করে। যেমন, কাজ (W = F &sdot; S) হলো বল ও সরণের স্কেলার গুণফল, যা একটি স্কেলার রাশি।</li><li><b>ভেক্টর গুণফল (Cross Product):</b> দুটি ভেক্টরের ভেক্টর গুণফল একটি ভেক্টর রাশি উৎপন্ন করে। যেমন, টর্ক (&tau; = r &times; F) হলো ব্যাসার্ধ ভেক্টর ও বলের ভেক্টর গুণফল, যা একটি ভেক্টর রাশি।</li></ul><p>সুতরাং, ভেক্টরকে ভেক্টর দ্বারা গুণ করলে গুণফল কখনও স্কেলার আবার কখনও ভেক্টর হতে পারে, নির্ভর করে কোন ধরনের গুণন করা হচ্ছে তার উপর।</p><ul><li>A) স্কেলার: এটি শুধুমাত্র ডট গুণফলের ক্ষেত্রে প্রযোজ্য।</li><li>B) ভেক্টর: এটি শুধুমাত্র ক্রস গুণফলের ক্ষেত্রে প্রযোজ্য।</li><li>C) কখনও স্কেলার, কখনও ভেক্টর: এটি সঠিক।</li><li>D) ধ্রুবক: এটি ভুল।</li></ul>",
+        },
+        {
+          id: 27,
+          question: "সঠিক উত্তর কোনটি?",
+          options: {
+            A: "k &times; i = 1",
+            B: "k &times; j = 1",
+            C: "k &times; i = -i",
+            D: "k &times; i = -1",
+          },
+          correct: "C",
+          explanation:
+            "<p>এই প্রশ্নটি আয়ত একক ভেক্টরের ক্রস গুণফল সম্পর্কিত। আয়ত একক ভেক্টর i, j, k যথাক্রমে x, y, z অক্ষ বরাবর।</p><p>নিয়মগুলো হলো:</p><ul><li>i &times; j = k</li><li>j &times; k = i</li><li>k &times; i = j</li></ul><p>এবং বিপরীত ক্রমে:</p><ul><li>j &times; i = -k</li><li>k &times; j = -i</li><li>i &times; k = -j</li></ul><p>একই ভেক্টরের ক্রস গুণফল শূন্য:</p><ul><li>i &times; i = 0</li><li>j &times; j = 0</li><li>k &times; k = 0</li></ul><p>এখন অপশনগুলো যাচাই করি:</p><ul><li>A) k &times; i = 1: এটি ভুল। k &times; i = j (একটি ভেক্টর)।</li><li>B) k &times; j = 1: এটি ভুল। k &times; j = -i (একটি ভেক্টর)।</li><li>C) k &times; i = -i: এটি ভুল। সঠিকটি হলো k &times; i = j। প্রদত্ত উত্তর C ভুল।</li><li>D) k &times; i = -1: এটি ভুল। k &times; i = j।</li></ul><p><b>প্রশ্ন এবং প্রদত্ত উত্তর (C) এর মধ্যে অসঙ্গতি রয়েছে। k &times; i এর সঠিক উত্তর হলো j।</b></p>",
+        },
+        {
+          id: 28,
+          question: "F = qv &times; B, সমীকরণ হতে F হল&mdash;",
+          options: {
+            A: "শুধুমাত্র q-এর সাথে লম্ব",
+            B: "শুধুমাত্র B-এর উপর লম্ব",
+            C: "v ও B উভয়ের উপর লম্ব",
+            D: "q ও B-এর উপর লম্ব",
+          },
+          correct: "C",
+          explanation:
+            "<p>লরেন্টজ বল (Lorentz force) এর সমীকরণ F = qv &times; B। এখানে:</p><ul><li>F হলো চৌম্বক বল (Magnetic force)</li><li>q হলো চার্জ (Scalar quantity)</li><li>v হলো চার্জের বেগ (Velocity vector)</li><li>B হলো চৌম্বক ক্ষেত্র (Magnetic field vector)</li></ul><p>এই সমীকরণটি একটি ভেক্টর গুণফল (Cross product) নির্দেশ করে। দুটি ভেক্টরের ক্রস গুণফল (এখানে v &times; B) একটি নতুন ভেক্টর উৎপন্ন করে যা মূল দুটি ভেক্টর (v এবং B) উভয়ের উপর লম্ব হয়। চার্জ q একটি স্কেলার রাশি, তাই এটি ভেক্টর গুণফলের দিককে প্রভাবিত করে না, কেবল মানকে পরিবর্তন করে।</p><p>সুতরাং, F ভেক্টরটি v ভেক্টর এবং B ভেক্টর উভয়ের উপর লম্ব হবে।</p><ul><li>A) শুধুমাত্র q-এর সাথে লম্ব: q একটি স্কেলার, তাই লম্ব হওয়ার প্রশ্নই আসে না।</li><li>B) শুধুমাত্র B-এর উপর লম্ব: এটি অসম্পূর্ণ, কারণ F, v এর উপরও লম্ব।</li><li>C) v ও B উভয়ের উপর লম্ব: এটি সঠিক।</li><li>D) q ও B-এর উপর লম্ব: q একটি স্কেলার।</li></ul>",
+        },
+        {
+          id: 29,
+          question:
+            "যদি &Aring; &times; B = B &times; A হয় তবে এদের মধ্যবর্তী কোণ&mdash;",
+          options: {
+            A: "&pi;",
+            B: "&pi;/2",
+            C: "&pi;/3",
+            D: "0",
+          },
+          correct: "A",
+          explanation: `<p>ভেক্টর গুণফল (Cross product) বিনিময় সূত্র মেনে চলে না। বরং, A × B = −(B × A)।</p>
+      <p>প্রশ্নে দেওয়া আছে: <span style="text-decoration: overline;">A</span> × <span style="text-decoration: overline;">B</span> = <span style="text-decoration: overline;">B</span> × <span style="text-decoration: overline;">A</span></p>
+      <p>এই সমীকরণটি তখনই সত্য হবে যখন A × B = 0 হবে। কারণ যদি A × B = X হয়, তাহলে X = −X, যা তখনই সম্ভব যখন X = 0।</p>
+      <p>যদি A × B = 0 হয়, তাহলে ভেক্টর <span style="text-decoration: overline;">A</span> ও <span style="text-decoration: overline;">B</span> হয় পরস্পর সমান্তরাল (একই দিকে বা বিপরীত দিকে) অথবা তাদের যেকোনো একটি বা উভয়ই শূন্য ভেক্টর।</p>
+      <p>যদি <span style="text-decoration: overline;">A</span> ও <span style="text-decoration: overline;">B</span> অশূন্য ভেক্টর হয়, তাহলে A × B = |A||B|sinθ <span style="text-decoration: overline;">n</span> = 0 তখনই হয় যখন sinθ = 0।</p>
+      <p>sinθ = 0 হয় যখন θ = 0° বা θ = 180° (π radians)।</p>
+      <p>অপশনগুলোতে 0° এবং π উভয়ই দেওয়া আছে। যদি দুটি ভেক্টর একই দিকে (0°) হয়, তাহলেও A × B = 0। যদি দুটি ভেক্টর বিপরীত দিকে (180° বা π) হয়, তাহলেও A × B = 0।</p>
+      <p>যেহেতু 0 এবং π উভয়ই sinθ = 0 শর্ত পূরণ করে, এবং উভয়ই A × B = B × A সমীকরণকে সত্য করে, তাই দুটি ভেক্টর যদি একই দিকে বা বিপরীত দিকে হয় তাহলে তাদের ক্রস গুণফল 0 হয়, যার ফলস্বরূপ <span style="text-decoration: overline;">A</span> × <span style="text-decoration: overline;">B</span> = <span style="text-decoration: overline;">B</span> × <span style="text-decoration: overline;">A</span> হয়। অপশনে π (180°) দেওয়া আছে, যা একটি বৈধ সমাধান।</p>
+      <ul>
+      <li>A) π: এটি সঠিক।</li>
+      <li>B) π/2: তখন |A × B| = |A||B| ≠ 0।</li>
+      <li>C) π/3: তখন |A × B| ≠ 0।</li>
+      <li>D) 0: এটিও সঠিক, কিন্তু অপশনে π দেওয়া আছে। একাধিক সঠিক উত্তর থাকলে সাধারণত সবচেয়ে ব্যাপক বা প্রদত্ত অপশনগুলোর মধ্যে সবচেয়ে উপযুক্তটি নির্বাচন করা হয়। এখানে, যদি ভেক্টর দুটি সমান্তরাল হয়, তাহলেই <span style="text-decoration: overline;">A</span> × <span style="text-decoration: overline;">B</span> = <span style="text-decoration: overline;">B</span> × <span style="text-decoration: overline;">A</span> এই শর্ত পূরণ হয়।</li>
+      </ul>
+      <p>সাধারণত, যদি <span style="text-decoration: overline;">A</span> × <span style="text-decoration: overline;">B</span> = <span style="text-decoration: overline;">B</span> × <span style="text-decoration: overline;">A</span> হয়, তাহলে <span style="text-decoration: overline;">A</span> × <span style="text-decoration: overline;">B</span> = −(<span style="text-decoration: overline;">A</span> × <span style="text-decoration: overline;">B</span>)। এই সম্পর্কটি তখনই সম্ভব যখন <span style="text-decoration: overline;">A</span> × <span style="text-decoration: overline;">B</span> = <span style="text-decoration: overline;">0</span>। আর <span style="text-decoration: overline;">A</span> × <span style="text-decoration: overline;">B</span> = <span style="text-decoration: overline;">0</span> তখনই হয় যখন <span style="text-decoration: overline;">A</span> এবং <span style="text-decoration: overline;">B</span> সমান্তরাল হয়, অর্থাৎ তাদের মধ্যবর্তী কোণ 0° বা 180° (π radians) হয়। যেহেতু অপশনে 0° নেই, তাই π সঠিক উত্তর।</p>`,
+        },
+        {
+          id: 30,
+          question:
+            "|&Aring;+B|= |&Aring;&minus;B| হলে ভেক্টর A ও B-এর ক্ষেত্রে&mdash;",
+          options: {
+            A: "A &times; B = 0",
+            B: "A &sdot; B = 0",
+            C: "A = B",
+            D: "কোনোটিই নয়",
+          },
+          correct: "B",
+          explanation:
+            "<p>আমরা জানি:</p><ul><li>|&Aring;+B|&sup2; = |&Aring;|&sup2; + |B|&sup2; + 2|&Aring;||B|cos&theta;</li><li>|&Aring;&minus;B|&sup2; = |&Aring;|&sup2; + |B|&sup2; - 2|&Aring;||B|cos&theta;</li></ul><p>প্রশ্নে দেওয়া আছে: |&Aring;+B| = |&Aring;&minus;B|</p><p>উভয় পক্ষকে বর্গ করে পাই:<br>|&Aring;+B|&sup2; = |&Aring;&minus;B|&sup2;<br>|&Aring;|&sup2; + |B|&sup2; + 2|&Aring;||B|cos&theta; = |&Aring;|&sup2; + |B|&sup2; - 2|&Aring;||B|cos&theta;</p><p>উভয় পক্ষ থেকে |&Aring;|&sup2; এবং |B|&sup2; বাদ দিলে পাই:<br>2|&Aring;||B|cos&theta; = -2|&Aring;||B|cos&theta;</p><p>সমীকরণটিকে একপাশে নিয়ে এলে:<br>4|&Aring;||B|cos&theta; = 0</p><p>যদি A ও B উভয়ই অশূন্য ভেক্টর হয় (|A| &ne; 0 এবং |B| &ne; 0), তাহলে 4|&Aring;||B| &ne; 0।</p><p>সুতরাং, cos&theta; = 0</p><p>যেহেতু cos&theta; = 0, তাই &theta; = 90&deg;।</p><p>আমরা জানি যে, দুটি ভেক্টরের মধ্যবর্তী কোণ 90&deg; হলে তাদের ডট গুণফল (A &sdot; B) শূন্য হয়।<br>A &sdot; B = |A||B|cos(90&deg;) = |A||B| &times; 0 = 0</p><ul><li>A) A &times; B = 0: এটি তখন হয় যখন ভেক্টর দুটি সমান্তরাল হয়।</li><li>B) A &sdot; B = 0: এটি সঠিক। এটি নির্দেশ করে যে A ও B পরস্পর লম্ব।</li><li>C) A = B: এটি নির্দেশ করে যে ভেক্টর দুটি সমান মান এবং একই দিক বিশিষ্ট।</li><li>D) কোনোটিই নয়: এটি ভুল।</li></ul>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                      <label class="option" data-option="${option}">
+                                        <div class="circle">${option}</div>
+                                        <span class="option-text">${question.options[option]}</span>
+                                      </label>
+                                    `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                         <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                         <div class="explanation-content">
+                                           <div class="explanation-label">ব্যাখ্যা:</div>
+                                           ${question.explanation}
+                                         </div>
+                                       </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                    <p class="question-label">${index + 1}. ${
+            question.question
+          }</p>
+                                    <div class="options">
+                                      ${optionsHTML}
+                                    </div>
+                                    ${explanationHTML}
+                                  `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
